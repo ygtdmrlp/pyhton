@@ -1,0 +1,70 @@
+import sys
+import time
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QPushButton, QLabel, QProgressBar
+import speedtest
+from threading import Thread
+
+class SpeedTestApp(QMainWindow):
+    def __init__(self):
+        super().__init__()
+
+        self.setWindowTitle("İnternet Hız Testi")
+        self.setGeometry(100, 100, 400, 200)
+
+        self.central_widget = QWidget()
+        self.setCentralWidget(self.central_widget)
+
+        self.layout = QVBoxLayout(self.central_widget)
+
+        self.download_label = QLabel("İndirme Hızı:", self)
+        self.layout.addWidget(self.download_label)
+
+        self.upload_label = QLabel("Yükleme Hızı:", self)
+        self.layout.addWidget(self.upload_label)
+
+        self.progress_bar = QProgressBar(self)
+        self.layout.addWidget(self.progress_bar)
+
+        self.test_button = QPushButton("Testi Başlat", self)
+        self.test_button.clicked.connect(self.start_speed_test)
+        self.layout.addWidget(self.test_button)
+
+        self.thread = None
+
+    def start_speed_test(self):
+        self.progress_bar.setValue(0)
+        self.thread = Thread(target=self.run_speed_test)
+        self.thread.start()
+
+    def run_speed_test(self):
+        st = speedtest.Speedtest()
+        st.get_best_server()
+
+        self.progress_bar.setValue(20)
+        time.sleep(1)
+
+        self.progress_bar.setValue(40)
+        download_speed = round(st.download() / 1_000_000, 2)  # Mbps
+        time.sleep(1)
+
+        self.progress_bar.setValue(60)
+        upload_speed = round(st.upload() / 1_000_000, 2)  # Mbps
+        time.sleep(1)
+
+        self.progress_bar.setValue(100)
+
+        self.download_label.setText(f"İndirme Hızı: {download_speed} Mbps")
+        self.upload_label.setText(f"Yükleme Hızı: {upload_speed} Mbps")
+        self.show_results()
+
+    def show_results(self):
+        result_label = QLabel("Hız Testi Tamamlandı!", self)
+        result_label.setStyleSheet("font-weight: bold; color: green;")
+        self.layout.addWidget(result_label)
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)  # Otomatik kapanmayı devre dışı bırak
+    window = SpeedTestApp()
+    window.show()
+    sys.exit(app.exec())
